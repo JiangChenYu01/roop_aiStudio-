@@ -1,3 +1,18 @@
+name: Package AI-Studio Bundle
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  bundle:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
       - name: Download pre-built Linux wheels
         run: |
           mkdir -p dist
@@ -9,3 +24,19 @@
             --implementation cp \
             --only-binary=:all: \
             --extra-index-url https://download.pytorch.org/whl/cu118
+      - name: Download models
+        run: |
+          mkdir -p models
+          wget -q https://github.com/deepinsight/insightface/releases/download/v0.7/buffalo_l.zip -O models/buffalo_l.zip
+          wget -q https://huggingface.co/henryruhs/roop/resolve/main/inswapper_128.onnx -O models/inswapper_128.onnx
+          wget -q https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.4.pth -O models/GFPGANv1.4.pth
+          unzip -q models/buffalo_l.zip -d models/buffalo_l
+          rm models/buffalo_l.zip
+      - name: Create bundle
+        run: |
+          tar -czf ai-studio-bundle.tar.gz dist models roop run.py requirements-headless.txt
+      - name: Upload bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-studio-bundle
+          path: ai-studio-bundle.tar.gz
